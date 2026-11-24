@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_violet">#6C5CE7</color>
+    <color name="brand_teal">#0FA3A3</color>
+    <color name="splash_bg">#6C5CE7</color>
+    <color name="app_bg">#F6F6FB</color>
+</resources>

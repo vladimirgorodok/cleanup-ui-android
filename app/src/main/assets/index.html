@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Очистка · OpenChamber</title>
+<style>
+  :root{--bg:#0e1116;--panel:#161b22;--panel2:#1c232d;--line:#2b3440;--text:#e6edf3;--muted:#8b98a5;--ok:#4ade80;--warn:#fbbf24;--err:#f87171;--run:#60a5fa}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:24px}
+  header{padding:16px 16px 10px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:18px}
+  .sub{color:var(--muted);font-size:12px}
+  main{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px}
+  h2{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:7px 11px}
+  button.primary{background:var(--ok);color:#06210f;border-color:var(--ok);font-weight:650}
+  button.warn{background:#3a2a12;border-color:#6b5220;color:#ffd893}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .app{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:11px;margin-bottom:8px}
+  .app-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .app-name{font-weight:650}
+  .pkg{color:var(--muted);font-size:11px;word-break:break-all}
+  .app-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
+  .pill{border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:11px}
+  .pill.ok{color:var(--ok);border-color:#215c37}.pill.bad{color:var(--warn);border-color:#6b5220}.pill.miss{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:left}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .path{word-break:break-all}
+  .job{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px;margin-bottom:8px;display:flex;gap:9px;align-items:flex-start}
+  .job input{margin-top:3px;width:16px;height:16px;accent-color:var(--ok)}
+  .job-title{font-weight:600}
+  .job-desc{color:var(--muted);font-size:12px;margin-top:3px}
+  .tag{font-size:10px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+  .tag.medium{color:var(--warn);border-color:#6b5220}
+  .bar{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:8px 0 5px}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,#4ade80,#22c55e);transition:width .3s}
+  .status{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+  pre{margin:9px 0 0;max-height:260px;overflow:auto;background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:9px;font:11px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+  .l-ok{color:var(--ok)}.l-run{color:var(--run)}.l-err{color:var(--err)}.l-info{color:#aab6c2}
+  dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);padding:18px;max-width:92vw}
+  dialog::backdrop{background:rgba(0,0,0,.7)}
+  .note{color:var(--muted);font-size:12px;border-left:2px solid var(--line);padding-left:9px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Очистка · OpenChamber / OpenCode</h1>
+  <div class="sub">Проверка версий, поиск рабочих каталогов, анализ и прогресс очистки</div>
+</header>
+
+<main>
+  <section>
+    <h2>Установленные приложения</h2>
+    <div class="toolbar">
+      <button id="check">Проверить обновления</button>
+      <span class="note" id="update-error"></span>
+    </div>
+    <div id="apps">Загрузка…</div>
+    <div id="ai-card" style="margin-top:8px"></div>
+  </section>
+
+  <section>
+    <h2>Найденные рабочие каталоги</h2>
+    <div class="toolbar"><button id="refresh-dirs">Обновить анализ</button></div>
+    <table>
+      <thead><tr><th>Каталог</th><th>Файлов</th><th style="width:78px">Размер</th></tr></thead>
+      <tbody id="dirs"><tr><td colspan="3">Загрузка…</td></tr></tbody>
+    </table>
+    <div class="note" id="storage-note" style="margin-top:8px"></div>
+  </section>
+
+  <section>
+    <h2>Описание процессов</h2>
+    <div id="jobs">Загрузка…</div>
+  </section>
+
+  <section>
+    <h2>Прогресс и журнал</h2>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="status"><span id="status">Готово к работе</span><span id="counter">0 / 0</span></div>
+    <pre id="log">Журнал пуст.</pre>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="primary" id="run" disabled>Запустить выбранные</button>
+      <button id="safe">Только безопасные</button>
+      <button id="clear">Снять выделение</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h3>Подтвердить очистку</h3>
+  <p id="dlg-text"></p>
+  <div class="toolbar" style="justify-content:flex-end;margin:0">
+    <button id="dlg-no">Отмена</button>
+    <button class="warn" id="dlg-yes">Да, удалить</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let apps = [], jobs = [], pending = [];
+
+function fmtMb(v){
+  v = Number(v)||0;
+  return v >= 1024 ? (v/1024).toFixed(2)+' ГБ' : v+' МБ';
+}
+function el(tag,cls,text){
+  const n=document.createElement(tag);
+  if(cls) n.className=cls;
+  if(text!==undefined) n.textContent=text;
+  return n;
+}
+function jcall(name, arg){
+  try { return arg === undefined ? Android[name]() : Android[name](arg); }
+  catch(e){ console.error(name, e); return null; }
+}
+
+function renderApps(){
+  const box=$('apps'); box.replaceChildren();
+  if(!apps.length){ box.append(el('div','note','Нет данных')); return; }
+  for(const a of apps){
+    const card=el('div','app');
+    const top=el('div','app-top');
+    top.append(el('div','app-name',a.name));
+    const pill=el('span','pill '+(a.installed?(a.outdated?'bad':'ok'):'miss'),
+      !a.installed?'не установлено':(a.outdated?'устарело':'актуально'));
+    top.append(pill); card.append(top);
+    card.append(el('div','pkg',a.package));
+    const meta=el('div','app-meta');
+    meta.append(el('span','','Установлено: '+(a.version||'—')));
+    meta.append(el('span','','Актуально: '+(a.latest||'…')));
+    card.append(meta);
+    const bar=el('div','toolbar'); bar.style.marginTop='8px'; bar.style.marginBottom='0';
+    if(a.installed){
+      const open=el('button','','Открыть');
+      open.onclick=()=>jcall('openApp',a.package); bar.append(open);
+    }
+    if(a.outdated || !a.installed){
+      const upd=el('button',a.outdated?'warn':'primary',a.installed?'Обновить':'Установить');
+      upd.onclick=()=>{ log('Загрузка APK: '+a.name,'run'); jcall('updateApp',a.package); };
+      bar.append(upd);
+    }
+    card.append(bar); box.append(card);
+  }
+}
+
+function loadApps(){
+  try{ apps=JSON.parse(jcall('getInstalledApps')||'[]'); }catch(e){ apps=[]; }
+  renderApps();
+}
+
+function loadDirs(){
+  let dirs=[];
+  try{ dirs=JSON.parse(jcall('getWorkDirs')||'[]'); }catch(e){}
+  const body=$('dirs'); body.replaceChildren();
+  for(const d of dirs){
+    const tr=el('tr');
+    tr.append(el('td','path',d.path + (!d.accessible?' (нет доступа)':'')),
+      el('td','num',String(d.files||0)), el('td','num',fmtMb(d.sizeMb)));
+    body.append(tr);
+  }
+  const found=dirs.filter(d=>d.exists).length;
+  $('storage-note').textContent='Найдено каталогов: '+found+' из '+dirs.length+'. Если доступа нет, включите «Доступ ко всем файлам» в настройках приложения.';
+}
+
+function loadJobs(){
+  try{ jobs=JSON.parse(jcall('getJobs')||'[]'); }catch(e){ jobs=[]; }
+  const box=$('jobs'); box.replaceChildren();
+  for(const job of jobs){
+    const label=el('label','job');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=job.id;
+    cb.addEventListener('change',updateRun);
+    const body=el('div');
+    body.style.flex='1'; body.style.minWidth='0';
+    body.append(el('div','job-title',job.title), el('div','job-desc',job.description));
+    const meta=el('div','toolbar'); meta.style.margin='6px 0 0';
+    meta.append(el('span','tag '+(job.risk==='medium'?'medium':''),job.risk==='medium'?'осторожно':'безопасно'));
+    meta.append(el('span','tag','~'+fmtMb(job.estimatedMb)));
+    body.append(meta); label.append(cb,body); box.append(label);
+  }
+  updateRun();
+}
+
+function log(line,kind){
+  const pre=$('log');
+  if(pre.textContent==='Журнал пуст.') pre.textContent='';
+  const d=document.createElement('div'); d.className='l-'+(kind||'info');
+  d.textContent=new Date().toLocaleTimeString('ru-RU',{hour12:false})+'  '+line;
+  pre.append(d); pre.scrollTop=pre.scrollHeight;
+}
+
+function updateRun(){
+  const n=[...document.querySelectorAll('#jobs input:checked')].length;
+  $('run').disabled = n===0 || $('run').dataset.busy==='1';
+}
+
+function renderAi(d){
+  const box=$('ai-card'); box.replaceChildren();
+  const card=el('div','app');
+  const top=el('div','app-top');
+  top.append(el('div','app-name','OpenCode AI (ядро)'));
+  top.append(el('span','pill ok','встроено в мобильные приложения'));
+  card.append(top);
+  const meta=el('div','app-meta');
+  meta.append(el('span','','Актуальная версия ядра: '+(d.aiLatest||'…')));
+  card.append(meta);
+  const note=el('div','note','Ядро поставляется внутри OpenChamber / OpenCode Mobile. Обновление приложения обновляет и ядро.');
+  note.style.marginTop='6px'; card.append(note);
+  const bar=el('div','toolbar'); bar.style.margin='8px 0 0';
+  const release=el('button','','Заметки версии');
+  release.onclick=()=>{ try{ Android.openUrl(d.aiUrl||'https://github.com/anomalyco/opencode/releases/latest'); }catch(e){} };
+  bar.append(release);
+  const oc=apps.find(a=>a.package==='com.openchamber.app'&&a.installed);
+  if(oc){
+    const upd=el('button','warn','Обновить OpenChamber');
+    upd.onclick=()=>{ log('Загрузка APK: OpenChamber','run'); jcall('updateApp','com.openchamber.app'); };
+    bar.append(upd);
+  }
+  card.append(bar); box.append(card);
+}
+
+window.onUpdates = function(raw){
+  try{
+    const d=JSON.parse(raw);
+    apps=d.apps||apps;
+    renderApps(); renderAi(d);
+    if(d.error) $('update-error').textContent='Некоторые версии не удалось проверить: '+d.error;
+    log('Проверка обновлений завершена','ok');
+  }catch(e){ log('Ошибка проверки обновлений','err'); }
+};
+window.onUpdateStarted = function(raw){
+  try{ const d=JSON.parse(raw); log('Скачивание обновления запущено ('+d.package+')','run'); }catch(e){}
+};
+window.onProgress = function(raw){
+  try{
+    const p=JSON.parse(raw);
+    $('counter').textContent=p.done+' / '+p.total;
+    $('bar').style.width=(p.total?Math.round(p.done/p.total*100):0)+'%';
+    $('status').textContent=p.type==='start'?('Выполняется: '+p.title):('Готово: '+p.title);
+    if(p.type==='start') log('▶ '+p.title,'run');
+    else log('✓ '+p.title+' — освобождено ~'+fmtMb(p.freedMb),'ok');
+  }catch(e){}
+};
+window.onDone = function(raw){
+  $('run').dataset.busy='0';
+  $('run').disabled=false;
+  $('status').textContent='Готово к работе';
+  log('Очистка завершена','ok');
+  loadDirs(); loadJobs();
+};
+
+$('check').onclick=()=>{ $('update-error').textContent=''; log('Проверка обновлений…','run'); jcall('checkUpdatesAsync'); };
+$('refresh-dirs').onclick=()=>{ loadDirs(); loadJobs(); };
+$('safe').onclick=()=>{ document.querySelectorAll('#jobs input').forEach(cb=>{ const j=jobs.find(x=>x.id===cb.value); cb.checked=j&&j.risk!=='medium'; }); updateRun(); };
+$('clear').onclick=()=>{ document.querySelectorAll('#jobs input').forEach(cb=>cb.checked=false); updateRun(); };
+
+const dlg=$('dlg');
+$('run').onclick=()=>{
+  pending=[...document.querySelectorAll('#jobs input:checked')].map(n=>n.value);
+  if(!pending.length) return;
+  const names=pending.map(id=>(jobs.find(j=>j.id===id)||{}).title||id);
+  $('dlg-text').textContent='Будут выполнены: '+names.join(', ')+'.';
+  dlg.showModal();
+};
+$('dlg-no').onclick=()=>dlg.close();
+$('dlg-yes').onclick=()=>{
+  dlg.close();
+  $('run').dataset.busy='1'; updateRun();
+  jcall('runCleanupAsync',JSON.stringify(pending));
+};
+
+loadApps(); loadDirs(); loadJobs();
+jcall('checkUpdatesAsync');
+</script>
+</body>
+</html>
