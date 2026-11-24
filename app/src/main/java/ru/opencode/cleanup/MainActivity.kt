@@ -21,6 +21,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import org.json.JSONArray
 import org.json.JSONObject
@@ -43,7 +44,7 @@ class MainActivity : Activity() {
         private const val AI_RELEASE_PAGE = "https://github.com/anomalyco/opencode/releases/latest"
         private const val OC_APK = "https://github.com/openchamber/openchamber/releases/download/canary/OpenChamber-canary-android.apk"
         private const val CODE_APK = "https://github.com/alvarolorentedev/opencode-mobile/releases/latest/download/opencode-mobile.apk"
-        private const val FALLBACK_SELF_VERSION = "1.1"
+        private const val FALLBACK_SELF_VERSION = "1.2"
         private const val FALLBACK_OC_VERSION = "2.8.0"
         private const val FALLBACK_CODE_VERSION = "1.0.172"
         private const val FALLBACK_AI_VERSION = "1.19.6"
@@ -142,7 +143,12 @@ class MainActivity : Activity() {
         }
 
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        registerReceiver(downloadReceiver, filter)
+        ContextCompat.registerReceiver(
+            this,
+            downloadReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         downloadReceiverRegistered = true
 
         requestStorageAccess()
