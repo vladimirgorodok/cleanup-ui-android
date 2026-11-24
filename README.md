@@ -40,7 +40,7 @@ CLEANUP_KEY_PASSWORD=...
 
 | Компонент | Проверка версии | APK обновления |
 |---|---|---|
-| Очистка UI | `vladimirgorodok/cleanup-ui-android` releases/latest | `cleanup-ui.apk` из latest release |
+| Очистка UI | `vladimirgorodok/cleanup-ui-android` releases/latest | `cleanup-ui.apk` из latest release (имя ассета должно сохраняться) |
 | OpenChamber | `openchamber/openchamber` releases/latest | `OpenChamber-canary-android.apk` из release `canary` |
 | OpenCode Mobile | `alvarolorentedev/opencode-mobile` releases/latest | `opencode-mobile.apk` из latest release |
 | OpenCode AI (ядро) | `anomalyco/opencode` releases/latest | обновляется вместе с мобильными приложениями |
